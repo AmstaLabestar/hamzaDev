@@ -7,6 +7,12 @@ const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 const SIGNED_URL_SKEW_SECONDS = 30;
+const VIDEO_EXTENSION_TO_MIME: Record<string, string> = {
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+};
 
 type SignedUrlCacheEntry = {
   url: string;
@@ -22,6 +28,28 @@ function sanitizeFileName(fileName: string): string {
     .trim()
     .replace(/[^a-z0-9.-]/g, '-')
     .replace(/-+/g, '-');
+}
+
+function normalizeMimeType(mimeType: string): string {
+  return mimeType.toLowerCase().split(';')[0].trim();
+}
+
+function getFileExtension(fileName: string): string {
+  const lastDotIndex = fileName.lastIndexOf('.');
+  if (lastDotIndex < 0) {
+    return '';
+  }
+  return fileName.slice(lastDotIndex + 1).toLowerCase();
+}
+
+function resolveVideoMimeType(file: File): string | null {
+  const normalizedMimeType = normalizeMimeType(file.type);
+  if (ALLOWED_VIDEO_TYPES.has(normalizedMimeType)) {
+    return normalizedMimeType;
+  }
+
+  const extension = getFileExtension(file.name);
+  return VIDEO_EXTENSION_TO_MIME[extension] ?? null;
 }
 
 function createPathPrefix(folder: 'projects' | 'documents' | 'avatars', userId: string): string {
@@ -134,7 +162,8 @@ export const storageService = {
   },
 
   async uploadProjectDemoVideo(file: File, userId: string): Promise<{ path: string; previewUrl: string }> {
-    if (!ALLOWED_VIDEO_TYPES.has(file.type)) {
+    const resolvedMimeType = resolveVideoMimeType(file);
+    if (!resolvedMimeType) {
       throw new Error('Only MP4, WEBM, and MOV videos are allowed');
     }
 
@@ -147,11 +176,14 @@ export const storageService = {
 
     const { error: uploadError } = await supabase.storage.from(BUCKET_NAME).upload(path, file, {
       upsert: false,
-      contentType: file.type,
+      contentType: resolvedMimeType,
       cacheControl: '3600',
     });
 
     if (uploadError) {
+      if (uploadError.message.toLowerCase().includes('mime type') && uploadError.message.toLowerCase().includes('not supported')) {
+        throw new Error('Video MIME type blocked by bucket settings. Allow video/mp4, video/webm, and video/quicktime in Supabase Storage for admin-private.');
+      }
       throw uploadError;
     }
 

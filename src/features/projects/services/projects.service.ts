@@ -10,6 +10,40 @@ import type {
 const TABLE_NAME = 'projects';
 const MAX_PAGE_SIZE = 100;
 
+type LegacyProjectPayload = Omit<ProjectWritePayload, 'project_type' | 'demo_video_path'>;
+
+function formatSupabaseError(
+  error: { message?: string; details?: string | null; hint?: string | null } | null,
+  fallbackMessage: string,
+): Error {
+  if (!error) {
+    return new Error(fallbackMessage);
+  }
+
+  const base = error.message?.trim() || fallbackMessage;
+  const details = error.details?.trim();
+  const hint = error.hint?.trim();
+
+  const detailParts = [details, hint].filter((part): part is string => Boolean(part));
+  if (detailParts.length === 0) {
+    return new Error(base);
+  }
+
+  return new Error(`${base} ${detailParts.join(' ')}`.trim());
+}
+
+function toLegacyPayload(payload: ProjectWritePayload): LegacyProjectPayload {
+  const { project_type: _projectType, demo_video_path: _demoVideoPath, ...legacyPayload } = payload;
+  return legacyPayload;
+}
+
+function shouldRetryWithLegacyProjectSchema(
+  error: { message?: string; details?: string | null; hint?: string | null } | null,
+): boolean {
+  const haystack = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''}`.toLowerCase();
+  return haystack.includes('does not exist') && (haystack.includes('project_type') || haystack.includes('demo_video_path'));
+}
+
 function normalizePageSize(pageSize: number): number {
   if (pageSize < 1) {
     return 1;
@@ -58,7 +92,7 @@ export const projectsService = {
 
     const { data, error, count } = await builder;
     if (error) {
-      throw error;
+      throw formatSupabaseError(error, 'Unable to load projects');
     }
 
     return {
@@ -78,36 +112,55 @@ export const projectsService = {
       .maybeSingle();
 
     if (error) {
-      throw error;
+      throw formatSupabaseError(error, 'Unable to load project');
     }
 
     return data as ProjectRecord | null;
   },
 
-  async create(payload: ProjectWritePayload): Promise<ProjectRecord> {
-    const { data, error } = await supabase.from(TABLE_NAME).insert(payload).select('*').single();
-
-    if (error) {
-      throw error;
+  async create(payload: ProjectWritePayload): Promise<void> {
+    const { error } = await supabase.from(TABLE_NAME).insert(payload);
+    if (!error) {
+      return;
     }
 
-    return data as ProjectRecord;
+    if (shouldRetryWithLegacyProjectSchema(error)) {
+      const { error: legacyError } = await supabase.from(TABLE_NAME).insert(toLegacyPayload(payload));
+      if (!legacyError) {
+        return;
+      }
+      throw formatSupabaseError(legacyError, 'Unable to create project');
+    }
+
+    throw formatSupabaseError(error, 'Unable to create project');
   },
 
-  async update(id: string, payload: ProjectWritePayload): Promise<ProjectRecord> {
-    const { data, error } = await supabase
+  async update(id: string, payload: ProjectWritePayload): Promise<void> {
+    const { error } = await supabase
       .from(TABLE_NAME)
       .update(payload)
       .eq('id', id)
-      .is('deleted_at', null)
-      .select('*')
-      .single();
+      .is('deleted_at', null);
 
-    if (error) {
-      throw error;
+    if (!error) {
+      return;
     }
 
-    return data as ProjectRecord;
+    if (shouldRetryWithLegacyProjectSchema(error)) {
+      const { error: legacyError } = await supabase
+        .from(TABLE_NAME)
+        .update(toLegacyPayload(payload))
+        .eq('id', id)
+        .is('deleted_at', null);
+
+      if (!legacyError) {
+        return;
+      }
+
+      throw formatSupabaseError(legacyError, 'Unable to update project');
+    }
+
+    throw formatSupabaseError(error, 'Unable to update project');
   },
 
   async setStatus(id: string, status: ProjectStatus): Promise<void> {
@@ -118,7 +171,7 @@ export const projectsService = {
       .is('deleted_at', null);
 
     if (error) {
-      throw error;
+      throw formatSupabaseError(error, 'Unable to update project status');
     }
   },
 
@@ -133,7 +186,7 @@ export const projectsService = {
       .is('deleted_at', null);
 
     if (error) {
-      throw error;
+      throw formatSupabaseError(error, 'Unable to archive project');
     }
   },
 };

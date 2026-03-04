@@ -40,6 +40,21 @@ const INITIAL_FORM_STATE: ProjectFormState = {
   status: 'draft',
 };
 
+function getUiErrorMessage(error: unknown, fallbackMessage: string): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+  }
+
+  return fallbackMessage;
+}
+
 export default function ProjectForm() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -126,7 +141,7 @@ export default function ProjectForm() {
       toast.success('Demo video uploaded successfully');
     } catch (error) {
       console.error('Video upload failed:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to upload demo video');
+      toast.error(getUiErrorMessage(error, 'Failed to upload demo video'));
     } finally {
       setUploading(false);
       event.target.value = '';
@@ -152,7 +167,7 @@ export default function ProjectForm() {
       toast.success('Image uploaded successfully');
     } catch (error) {
       console.error('Image upload failed:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to upload image');
+      toast.error(getUiErrorMessage(error, 'Failed to upload image'));
     } finally {
       setUploading(false);
     }
@@ -211,7 +226,7 @@ export default function ProjectForm() {
       navigate('/admin/projects');
     } catch (error) {
       console.error('Failed to save project:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to save project');
+      toast.error(getUiErrorMessage(error, 'Failed to save project'));
     } finally {
       setLoading(false);
     }
@@ -433,7 +448,7 @@ export default function ProjectForm() {
                 </p>
                 <Input
                   type="file"
-                  accept="video/mp4,video/webm,video/quicktime"
+                  accept="video/mp4,video/webm,video/quicktime,video/x-m4v,.mp4,.webm,.mov,.m4v"
                   onChange={handleDemoVideoUpload}
                   disabled={uploading}
                   className="max-w-xs mx-auto"
