@@ -13,18 +13,18 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signin, isAuthenticated, isAdmin } = useAuth();
+  const { signin, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const configuredAdminEmail = useMemo(() => getConfiguredAdminEmail(), []);
   const isAdminEmailConfigured = Boolean(configuredAdminEmail);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (authLoading || !isAuthenticated) {
       return;
     }
 
     navigate(isAdmin ? '/admin' : '/', { replace: true });
-  }, [isAdmin, isAuthenticated, navigate]);
+  }, [authLoading, isAdmin, isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +44,6 @@ export default function LoginPage() {
     try {
       await signin(email, password);
       toast.success('Welcome back!');
-      navigate('/admin');
     } catch (error: unknown) {
       console.error('Login error:', error);
       if (error instanceof Error && error.message.includes('Email logins are disabled')) {

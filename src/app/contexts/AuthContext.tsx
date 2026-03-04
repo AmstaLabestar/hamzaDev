@@ -28,7 +28,6 @@ async function resolveAdminStatus(userId: string, email: string | null | undefin
     .from('admin_users')
     .select('user_id, email')
     .eq('user_id', userId)
-    .eq('email', normalizedEmail)
     .eq('is_active', true)
     .is('deleted_at', null)
     .maybeSingle();
@@ -108,6 +107,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user?.id && nextSession.user.email) {
+        if (mounted) {
+          setLoading(true);
+        }
+
         void resolveAdminStatus(nextSession.user.id, nextSession.user.email)
           .then((admin) => {
             if (mounted) {
@@ -119,9 +122,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (mounted) {
               setIsAdmin(false);
             }
+          })
+          .finally(() => {
+            if (mounted) {
+              setLoading(false);
+            }
           });
       } else {
         setIsAdmin(false);
+        setLoading(false);
       }
     });
 
