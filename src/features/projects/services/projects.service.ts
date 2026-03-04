@@ -13,7 +13,7 @@ const MAX_PAGE_SIZE = 100;
 type LegacyProjectPayload = Omit<ProjectWritePayload, 'project_type' | 'demo_video_path'>;
 
 function formatSupabaseError(
-  error: { message?: string; details?: string | null; hint?: string | null } | null,
+  error: { code?: string; message?: string; details?: string | null; hint?: string | null } | null,
   fallbackMessage: string,
 ): Error {
   if (!error) {
@@ -38,10 +38,26 @@ function toLegacyPayload(payload: ProjectWritePayload): LegacyProjectPayload {
 }
 
 function shouldRetryWithLegacyProjectSchema(
-  error: { message?: string; details?: string | null; hint?: string | null } | null,
+  error: { code?: string; message?: string; details?: string | null; hint?: string | null } | null,
 ): boolean {
   const haystack = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''}`.toLowerCase();
-  return haystack.includes('does not exist') && (haystack.includes('project_type') || haystack.includes('demo_video_path'));
+  const code = (error?.code ?? '').toLowerCase();
+
+  const mentionsLegacyColumn =
+    haystack.includes('project_type') ||
+    haystack.includes('project type') ||
+    haystack.includes('demo_video_path') ||
+    haystack.includes('demo video path');
+
+  const mentionsMissingColumn =
+    haystack.includes('does not exist') ||
+    haystack.includes('could not find') ||
+    haystack.includes('column') ||
+    haystack.includes('schema cache');
+
+  const looksLikePostgrestSchemaCacheError = code.startsWith('pgrst2');
+
+  return mentionsLegacyColumn && (mentionsMissingColumn || looksLikePostgrestSchemaCacheError);
 }
 
 function normalizePageSize(pageSize: number): number {
