@@ -12,6 +12,7 @@ import { projectsService } from '@/features/projects/services/projects.service';
 import type { ProjectStatus, ProjectType, ProjectWritePayload } from '@/features/projects/types';
 import { storageService } from '@/services/storage.service';
 import { useAuth } from '../contexts/AuthContext';
+import { AdminPageHeader } from '@/app/components/dashboard';
 
 interface ProjectFormState {
   title: string;
@@ -217,24 +218,24 @@ export default function ProjectForm() {
   };
 
   return (
-    <div className="max-w-4xl">
-      <div className="mb-8">
-        <Button variant="ghost" className="mb-4" onClick={() => navigate('/admin/projects')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Projects
-        </Button>
-        <h1 className="text-3xl font-bold mb-2">{isEditing ? 'Edit Project' : 'New Project'}</h1>
-        <p className="text-muted-foreground">
-          {isEditing ? 'Update project details' : 'Add a new project to your portfolio'}
-        </p>
-      </div>
+    <div className="max-w-4xl space-y-8">
+      <AdminPageHeader
+        title={isEditing ? 'Edit Project' : 'New Project'}
+        description={isEditing ? 'Update project details' : 'Add a new project to your portfolio'}
+        action={
+          <Button variant="outline" className="glow-hover" onClick={() => navigate('/admin/projects')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Projects
+          </Button>
+        }
+      />
 
       <motion.form
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         onSubmit={(event) => void handleSubmit(event)}
-        className="bg-card border border-border rounded-xl p-8 space-y-6"
+        className="rounded-2xl border border-border/70 bg-card/85 p-8 space-y-6 theme-glass"
       >
         <div className="space-y-2">
           <Label htmlFor="title">Project Title *</Label>
@@ -268,7 +269,7 @@ export default function ProjectForm() {
               onChange={(event) =>
                 setFormData((previous) => ({ ...previous, project_type: event.target.value as ProjectType }))
               }
-              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              className="admin-select"
             >
               <option value="web">Web</option>
               <option value="mobile">Mobile</option>
@@ -297,7 +298,7 @@ export default function ProjectForm() {
               onChange={(event) =>
                 setFormData((previous) => ({ ...previous, status: event.target.value as ProjectStatus }))
               }
-              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              className="admin-select"
             >
               <option value="draft">Draft</option>
               <option value="published">Published</option>

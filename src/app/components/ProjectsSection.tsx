@@ -4,9 +4,12 @@ import { projectsService } from '@/features/projects/services/projects.service';
 import { storageService } from '@/services/storage.service';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { SectionHeader } from './ui/SectionHeader';
+import { TiltCard } from './ui/TiltCard';
 import { ExternalLink, Github } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ProjectCardSkeleton } from './LoadingSkeleton';
+import { usePrefersReducedMotion } from '@/app/hooks';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import { translations } from '@/app/lib/translations';
 
@@ -34,6 +37,7 @@ function normalizeStoragePath(path: string): string {
 export function ProjectsSection() {
   const { language } = useLanguage();
   const text = translations[language];
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -97,18 +101,7 @@ export function ProjectsSection() {
   return (
     <section id="projects" className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">{text.projects.title}</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            {text.projects.subtitle}
-          </p>
-        </motion.div>
+        <SectionHeader title={text.projects.title} subtitle={text.projects.subtitle} />
 
         {/* Projects Grid */}
         {loading ? (
@@ -118,17 +111,37 @@ export function ProjectsSection() {
             ))}
           </div>
         ) : projects.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <motion.div
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={{
+              hidden: {},
+              show: {
+                transition: {
+                  staggerChildren: prefersReducedMotion ? 0 : 0.08,
+                  delayChildren: 0.05,
+                },
+              },
+            }}
+          >
             {projects.map((project, index) => (
               <motion.div
                 key={project.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="group"
+                variants={{
+                  hidden: { opacity: 0, y: prefersReducedMotion ? 0 : 18 },
+                  show: {
+                    opacity: 1,
+                    y: 0,
+                    transition: {
+                      duration: 0.44,
+                      delay: prefersReducedMotion ? 0 : index * 0.01,
+                    },
+                  },
+                }}
               >
-                <div className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300">
+                <TiltCard className="group bg-card border border-border rounded-xl overflow-hidden glow-hover">
                   {/* Project Image */}
                   <div className="relative aspect-video bg-muted overflow-hidden">
                     <div className="absolute top-3 left-3 z-10">
@@ -147,6 +160,10 @@ export function ProjectsSection() {
                       <img
                         src={project.image}
                         alt={project.title}
+                        width={1280}
+                        height={720}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
@@ -206,10 +223,10 @@ export function ProjectsSection() {
                       )}
                     </div>
                   </div>
-                </div>
+                </TiltCard>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         ) : (
           <div className="text-center py-12 text-muted-foreground">
             {text.projects.empty}

@@ -37,6 +37,7 @@ import { useExperiences } from '@/features/experiences/hooks/useExperiences';
 import { experiencesService } from '@/features/experiences/services/experiences.service';
 import type { ExperienceStatus, ExperienceWritePayload } from '@/features/experiences/types';
 import { toast } from 'sonner';
+import { AdminPageHeader, AdminPagination } from '@/app/components/dashboard';
 
 interface ExperienceFormState {
   position: string;
@@ -178,16 +179,16 @@ export default function AdminExperiences() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Experiences</h1>
-          <p className="text-muted-foreground">Manage work experiences for your portfolio.</p>
-        </div>
-        <Button onClick={openCreateDialog}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Experience
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Experiences"
+        description="Manage work experiences for your portfolio."
+        action={
+          <Button onClick={openCreateDialog} className="glow-hover">
+            <Plus className="h-4 w-4 mr-2" />
+            New Experience
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-[1fr_220px]">
         <Input
@@ -198,7 +199,7 @@ export default function AdminExperiences() {
         <select
           value={query.status ?? 'all'}
           onChange={(event) => setStatus(event.target.value as 'all' | 'draft' | 'published')}
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          className="admin-select"
         >
           <option value="all">All statuses</option>
           <option value="published">Published</option>
@@ -206,7 +207,7 @@ export default function AdminExperiences() {
         </select>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="admin-table-shell">
         {loading ? (
           <Table>
             <TableBody>
@@ -269,31 +270,13 @@ export default function AdminExperiences() {
         )}
       </div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {total} result{total > 1 ? 's' : ''} - Page {query.page} / {totalPages}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={query.page <= 1}
-            onClick={() => setPage(query.page - 1)}
-          >
-            Previous
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={query.page >= totalPages}
-            onClick={() => setPage(query.page + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <AdminPagination
+        total={total}
+        page={query.page}
+        totalPages={totalPages}
+        onPrevious={() => setPage(query.page - 1)}
+        onNext={() => setPage(query.page + 1)}
+      />
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="sm:max-w-2xl">
@@ -339,7 +322,7 @@ export default function AdminExperiences() {
                   onChange={(event) =>
                     setFormData((previous) => ({ ...previous, status: event.target.value as ExperienceStatus }))
                   }
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  className="admin-select"
                 >
                   <option value="draft">Draft</option>
                   <option value="published">Published</option>
@@ -434,4 +417,3 @@ export default function AdminExperiences() {
     </div>
   );
 }
-

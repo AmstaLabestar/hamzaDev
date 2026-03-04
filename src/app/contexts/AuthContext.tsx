@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase-client';
+import { getConfiguredAdminEmail, isAuthorizedAdminEmail } from '@/app/utils/admin-access';
 
 interface AuthContextType {
   user: User | null;
@@ -15,11 +16,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-async function resolveAdminStatus(userId: string): Promise<boolean> {
+async function resolveAdminStatus(userId: string, email: string | null | undefined): Promise<boolean> {
+  const normalizedEmail = (email ?? '').trim().toLowerCase();
+  const configuredAdminEmail = getConfiguredAdminEmail();
+
+  if (!configuredAdminEmail || !isAuthorizedAdminEmail(normalizedEmail)) {
+    return false;
+  }
+
   const { data, error } = await supabase
     .from('admin_users')
-    .select('user_id')
+    .select('user_id, email')
     .eq('user_id', userId)
+    .eq('email', normalizedEmail)
     .eq('is_active', true)
     .is('deleted_at', null)
     .maybeSingle();
@@ -38,19 +47,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const refreshAdminStatus = useCallback(async () => {
-    if (!user?.id) {
+    if (!user?.id || !user?.email) {
       setIsAdmin(false);
       return;
     }
 
     try {
-      const admin = await resolveAdminStatus(user.id);
+      const admin = await resolveAdminStatus(user.id, user.email);
       setIsAdmin(admin);
     } catch (error) {
       console.error('Admin role check failed:', error);
       setIsAdmin(false);
     }
-  }, [user?.id]);
+  }, [user?.email, user?.id]);
 
   useEffect(() => {
     let mounted = true;
@@ -70,8 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
 
-        if (currentSession?.user?.id) {
-          const admin = await resolveAdminStatus(currentSession.user.id);
+        if (currentSession?.user?.id && currentSession.user.email) {
+          const admin = await resolveAdminStatus(currentSession.user.id, currentSession.user.email);
           if (mounted) {
             setIsAdmin(admin);
           }
@@ -98,8 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
-      if (nextSession?.user?.id) {
-        void resolveAdminStatus(nextSession.user.id)
+      if (nextSession?.user?.id && nextSession.user.email) {
+        void resolveAdminStatus(nextSession.user.id, nextSession.user.email)
           .then((admin) => {
             if (mounted) {
               setIsAdmin(admin);
@@ -123,9 +132,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signin = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!isAuthorizedAdminEmail(email)) {
+      throw new Error('Access denied. This admin area is restricted to the configured administrator email.');
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       throw error;
+    }
+
+    const resolvedEmail = data.user?.email ?? data.session?.user?.email ?? email;
+    if (!isAuthorizedAdminEmail(resolvedEmail)) {
+      await supabase.auth.signOut();
+      throw new Error('Access denied. This account is not authorized for admin access.');
     }
   }, []);
 

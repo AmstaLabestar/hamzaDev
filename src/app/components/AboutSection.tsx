@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Badge } from './ui/badge';
-import { Code2, Database, Globe, Sparkles } from 'lucide-react';
+import { SectionHeader } from './ui/SectionHeader';
+import { TechBadge } from './ui/TechBadge';
 import { publicContentService } from '@/features/public/services/public-content.service';
 import { storageService } from '@/services/storage.service';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import { translations } from '@/app/lib/translations';
+import { CORE_TECH_STACK } from '@/app/utils/tech-stack';
 
 const FALLBACK_AVATAR_URL = '/images/profile.jpeg';
 
@@ -78,28 +80,10 @@ export function AboutSection() {
   const resolvedTitle = hasProfile ? professionalTitle : text.about.defaultTitle;
   const resolvedBio = hasProfile ? bio : text.about.defaultBio;
 
-  const techStack = [
-    { icon: Code2, name: text.about.techFrontend, color: 'text-blue-500' },
-    { icon: Database, name: text.about.techBackend, color: 'text-green-500' },
-    { icon: Globe, name: text.about.techFullStack, color: 'text-purple-500' },
-    { icon: Sparkles, name: text.about.techUiUx, color: 'text-pink-500' },
-  ];
-
   return (
     <section id="about" className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">{text.about.title}</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            {text.about.subtitle}
-          </p>
-        </motion.div>
+        <SectionHeader title={text.about.title} subtitle={text.about.subtitle} />
 
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div
@@ -115,6 +99,10 @@ export function AboutSection() {
                 <img
                   src={avatarUrl}
                   alt={resolvedName}
+                  width={256}
+                  height={256}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                   onError={() => setAvatarUrl(FALLBACK_AVATAR_URL)}
                 />
@@ -139,20 +127,15 @@ export function AboutSection() {
               <p className="text-2xl font-semibold">{resolvedName}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {techStack.map((tech, index) => (
-                <motion.div
-                  key={tech.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="bg-card border border-border rounded-xl p-6 hover:shadow-lg transition-shadow"
-                >
-                  <tech.icon className={`h-8 w-8 ${tech.color} mb-3`} />
-                  <h4 className="font-semibold">{tech.name}</h4>
-                </motion.div>
-              ))}
+            <div className="space-y-3">
+              <h4 className="font-semibold text-lg">
+                {language === 'fr' ? 'Stack principal' : 'Core Stack'}
+              </h4>
+              <div className="flex flex-wrap gap-2 sm:gap-3">
+                {CORE_TECH_STACK.map((tech, index) => (
+                  <TechBadge key={tech.id} tech={tech} delay={index * 0.04} />
+                ))}
+              </div>
             </div>
 
             <div className="space-y-4">

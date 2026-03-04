@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { Lock, Mail } from 'lucide-react';
@@ -7,16 +7,38 @@ import { Input } from '../components/ui/input';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { AdminSetupGuide } from '../components/AdminSetupGuide';
+import { getConfiguredAdminEmail } from '@/app/utils/admin-access';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signin } = useAuth();
+  const { signin, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const configuredAdminEmail = useMemo(() => getConfiguredAdminEmail(), []);
+  const isAdminEmailConfigured = Boolean(configuredAdminEmail);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    navigate(isAdmin ? '/admin' : '/', { replace: true });
+  }, [isAdmin, isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isAdminEmailConfigured) {
+      toast.error('Admin access is not configured. Set VITE_ADMIN_EMAIL in your environment.');
+      return;
+    }
+
+    if (configuredAdminEmail && email.trim().toLowerCase() !== configuredAdminEmail) {
+      toast.error('Access denied. This admin area is restricted to the configured administrator email.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -62,10 +84,11 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@example.com"
+                  placeholder={configuredAdminEmail ?? 'admin@example.com'}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
+                  autoComplete="username"
                   required
                 />
               </div>
@@ -84,18 +107,23 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10"
+                  autoComplete="current-password"
                   required
                 />
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || !isAdminEmailConfigured}>
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Use your Supabase admin account.</p>
+            {isAdminEmailConfigured ? (
+              <p>Use the configured administrator account only.</p>
+            ) : (
+              <p>Admin access is disabled until `VITE_ADMIN_EMAIL` is configured.</p>
+            )}
           </div>
         </div>
 

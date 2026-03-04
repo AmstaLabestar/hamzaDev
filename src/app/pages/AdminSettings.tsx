@@ -14,6 +14,7 @@ import {
 } from '@/app/components/ui/table';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useSecurity } from '@/features/settings/hooks/useSecurity';
+import { AdminPageHeader, AdminPagination, AdminSurface } from '@/app/components/dashboard';
 
 export default function AdminSettings() {
   const { isAdmin } = useAuth();
@@ -53,19 +54,19 @@ export default function AdminSettings() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Settings</h1>
-          <p className="text-muted-foreground">Security controls, sessions and audit logs.</p>
-        </div>
-        <Button variant="outline" onClick={() => void reload()} disabled={loading}>
-          <RotateCcw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Settings"
+        description="Security controls, sessions and audit logs."
+        action={
+          <Button variant="outline" onClick={() => void reload()} disabled={loading} className="glow-hover">
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="bg-card border border-border rounded-xl p-5">
+        <AdminSurface className="h-full">
           <div className="flex items-center gap-2 mb-2">
             <Shield className="h-4 w-4 text-primary" />
             <h2 className="font-semibold">Security Overview</h2>
@@ -76,9 +77,9 @@ export default function AdminSettings() {
             <p>Verified: <span className="text-muted-foreground">{overview?.emailConfirmedAt ? 'Yes' : 'No'}</span></p>
             <p>Last Sign-in: <span className="text-muted-foreground">{overview?.lastSignInAt ? new Date(overview.lastSignInAt).toLocaleString() : '-'}</span></p>
           </div>
-        </div>
+        </AdminSurface>
 
-        <div className="bg-card border border-border rounded-xl p-5">
+        <AdminSurface className="h-full">
           <div className="flex items-center gap-2 mb-2">
             <KeyRound className="h-4 w-4 text-primary" />
             <h2 className="font-semibold">Change Password</h2>
@@ -108,13 +109,14 @@ export default function AdminSettings() {
               type="button"
               onClick={() => void handleChangePassword()}
               disabled={changingPassword || newPassword.length < 10 || newPassword !== confirmPassword}
+              className="glow-hover"
             >
               {changingPassword ? 'Updating...' : 'Update Password'}
             </Button>
           </div>
-        </div>
+        </AdminSurface>
 
-        <div className="bg-card border border-border rounded-xl p-5">
+        <AdminSurface className="h-full">
           <div className="flex items-center gap-2 mb-2">
             <Clock3 className="h-4 w-4 text-primary" />
             <h2 className="font-semibold">Session</h2>
@@ -132,10 +134,10 @@ export default function AdminSettings() {
           >
             {revoking ? 'Revoking...' : 'Sign Out All Sessions'}
           </Button>
-        </div>
+        </AdminSurface>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="admin-table-shell">
         <div className="px-5 py-4 border-b border-border">
           <h2 className="font-semibold">Admin Logs</h2>
           <p className="text-xs text-muted-foreground mt-1">
@@ -172,26 +174,14 @@ export default function AdminSettings() {
         </Table>
       </div>
 
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={logsPage <= 1}
-          onClick={() => setLogsPage(logsPage - 1)}
-        >
-          Previous
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={logsPage >= totalPages}
-          onClick={() => setLogsPage(logsPage + 1)}
-        >
-          Next
-        </Button>
-      </div>
+      <AdminPagination
+        total={logsTotal}
+        page={logsPage}
+        totalPages={totalPages}
+        summaryText={`${logsTotal} log entr${logsTotal > 1 ? 'ies' : 'y'} - page ${logsPage} / ${totalPages}`}
+        onPrevious={() => setLogsPage(logsPage - 1)}
+        onNext={() => setLogsPage(logsPage + 1)}
+      />
     </div>
   );
 }

@@ -1,27 +1,35 @@
 import { Link } from 'react-router';
-import { Moon, Sun, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Button } from './ui/button';
-import { useState } from 'react';
-import { useTheme } from 'next-themes';
+import { memo, useMemo, useState } from 'react';
+import { ThemeCycleButton } from './ui/ThemeCycleButton';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import { useActiveSection } from '@/app/hooks';
 import { translations } from '@/app/lib/translations';
+import { cn } from './ui/utils';
 
-export function Navbar() {
+function NavbarImpl() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
   const { language, toggleLanguage } = useLanguage();
   const text = translations[language];
 
-  const navLinks = [
-    { name: text.navbar.home, href: '/' },
-    { name: text.navbar.about, href: '#about' },
-    { name: text.navbar.experiences, href: '#experiences' },
-    { name: text.navbar.projects, href: '#projects' },
-    { name: text.navbar.contact, href: '#contact' },
-  ];
+  const navLinks = useMemo(
+    () => [
+      { name: text.navbar.home, href: '#home', sectionId: 'home' },
+      { name: text.navbar.about, href: '#about', sectionId: 'about' },
+      { name: text.navbar.experiences, href: '#experiences', sectionId: 'experiences' },
+      { name: text.navbar.projects, href: '#projects', sectionId: 'projects' },
+      { name: text.navbar.contact, href: '#contact', sectionId: 'contact' },
+    ],
+    [text],
+  );
+  const trackedSectionIds = useMemo(() => navLinks.map((link) => link.sectionId), [navLinks]);
+  const activeSection = useActiveSection({
+    sectionIds: trackedSectionIds,
+  });
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/70 bg-background/60 backdrop-blur-xl theme-glass">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -35,9 +43,21 @@ export function Navbar() {
               <a
                 key={link.name}
                 href={link.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                aria-current={activeSection === link.sectionId ? 'page' : undefined}
+                className={cn(
+                  'relative text-sm font-medium transition-colors',
+                  activeSection === link.sectionId
+                    ? 'text-primary glow-text'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
               >
                 {link.name}
+                <span
+                  className={cn(
+                    'absolute -bottom-1 left-0 h-0.5 rounded-full bg-primary transition-all duration-300',
+                    activeSection === link.sectionId ? 'w-full opacity-100' : 'w-0 opacity-0',
+                  )}
+                />
               </a>
             ))}
           </div>
@@ -54,18 +74,11 @@ export function Navbar() {
               {language === 'fr' ? 'EN' : 'FR'}
             </Button>
 
-            <Button
+            <ThemeCycleButton
               variant="ghost"
               size="icon"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="hidden md:flex"
-            >
-              {theme === 'dark' ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </Button>
+              className="hidden md:flex glow-hover"
+            />
 
             {/* Mobile Menu Button */}
             <Button
@@ -86,39 +99,32 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background">
+        <div className="md:hidden border-t border-border/70 bg-background/80 backdrop-blur-xl theme-glass">
           <div className="px-4 py-4 space-y-3">
             {navLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
-                className="block text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
+                aria-current={activeSection === link.sectionId ? 'page' : undefined}
+                className={cn(
+                  'block rounded-md border-l-2 py-2 pl-3 text-sm font-medium transition-colors',
+                  activeSection === link.sectionId
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground',
+                )}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {link.name}
               </a>
             ))}
-            <Button
+            <ThemeCycleButton
               variant="ghost"
               size="sm"
-              onClick={() => {
-                setTheme(theme === 'dark' ? 'light' : 'dark');
-                setMobileMenuOpen(false);
-              }}
               className="w-full justify-start"
-            >
-              {theme === 'dark' ? (
-                <>
-                  <Sun className="h-4 w-4 mr-2" />
-                  {text.navbar.lightMode}
-                </>
-              ) : (
-                <>
-                  <Moon className="h-4 w-4 mr-2" />
-                  {text.navbar.darkMode}
-                </>
-              )}
-            </Button>
+              labelPrefix={language === 'fr' ? 'Theme' : 'Theme'}
+              onThemeChanged={() => setMobileMenuOpen(false)}
+              showLabel
+            />
             <Button
               variant="ghost"
               size="sm"
@@ -137,3 +143,5 @@ export function Navbar() {
     </nav>
   );
 }
+
+export const Navbar = memo(NavbarImpl);

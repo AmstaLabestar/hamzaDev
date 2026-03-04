@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, Download, Github, Linkedin, Mail } from 'lucide-react';
 import { Button } from './ui/button';
+import { Magnetic } from './ui/Magnetic';
+import { TiltCard } from './ui/TiltCard';
+import { usePrefersReducedMotion, useTypingEffect } from '@/app/hooks';
 import { publicContentService } from '@/features/public/services/public-content.service';
 import { storageService } from '@/services/storage.service';
 import { useLanguage } from '@/app/contexts/LanguageContext';
@@ -26,6 +29,15 @@ function normalizeAvatarPath(path: string): string {
 export function HeroSection() {
   const { language } = useLanguage();
   const text = translations[language];
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const { typedText } = useTypingEffect({
+    phrases: [
+      'I build scalable systems.',
+      'I design futuristic interfaces.',
+      'I architect robust backends.',
+      'I solve real-world problems.',
+    ],
+  });
   const [displayName, setDisplayName] = useState('');
   const [displayTitle, setDisplayTitle] = useState('');
   const [displayBio, setDisplayBio] = useState('');
@@ -73,28 +85,28 @@ export function HeroSection() {
   const resolvedBio = hasProfile ? displayBio : text.hero.defaultBio;
 
   return (
-    <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-16">
+    <section id="home" className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-16">
       <div className="max-w-7xl mx-auto w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.5 }}
             className="space-y-6"
           >
             <div className="space-y-4">
               <motion.p
-                initial={{ opacity: 0, y: 20 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+                transition={{ duration: prefersReducedMotion ? 0 : 0.5, delay: prefersReducedMotion ? 0 : 0.1 }}
                 className="text-primary font-semibold"
               >
                 {text.hero.greeting} {resolvedName}
               </motion.p>
               <motion.h1
-                initial={{ opacity: 0, y: 20 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                transition={{ duration: prefersReducedMotion ? 0 : 0.5, delay: prefersReducedMotion ? 0 : 0.2 }}
                 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight"
               >
                 {resolvedTitle}{' '}
@@ -103,32 +115,45 @@ export function HeroSection() {
                 </span>
               </motion.h1>
               <motion.p
-                initial={{ opacity: 0, y: 20 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
+                transition={{ duration: prefersReducedMotion ? 0 : 0.5, delay: prefersReducedMotion ? 0 : 0.3 }}
                 className="text-lg text-muted-foreground max-w-xl"
               >
                 {resolvedBio}
               </motion.p>
+              <motion.div
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: prefersReducedMotion ? 0 : 0.5, delay: prefersReducedMotion ? 0 : 0.35 }}
+                className="inline-flex items-center gap-2 rounded-full border border-primary/35 bg-background/50 px-4 py-2 text-sm font-mono text-primary glow-hover"
+              >
+                <span aria-live="polite">{typedText}</span>
+                {!prefersReducedMotion ? <span className="typing-cursor" aria-hidden /> : null}
+              </motion.div>
             </div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.5, delay: prefersReducedMotion ? 0 : 0.4 }}
               className="space-y-4"
             >
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" className="gap-2" asChild>
-                  <a href="#projects">
-                    {text.hero.viewWork}
-                    <ArrowRight className="h-4 w-4" />
-                  </a>
-                </Button>
-                <Button size="lg" variant="outline" className="gap-2">
-                  <Download className="h-4 w-4" />
-                  {text.hero.downloadCv}
-                </Button>
+                <Magnetic>
+                  <Button size="lg" className="gap-2 glow-hover" asChild>
+                    <a href="#projects">
+                      {text.hero.viewWork}
+                      <ArrowRight className="h-4 w-4" />
+                    </a>
+                  </Button>
+                </Magnetic>
+                <Magnetic strength={12}>
+                  <Button size="lg" variant="outline" className="gap-2 glow-hover">
+                    <Download className="h-4 w-4" />
+                    {text.hero.downloadCv}
+                  </Button>
+                </Magnetic>
               </div>
 
               <div className="flex items-center gap-3">
@@ -160,21 +185,26 @@ export function HeroSection() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.5, delay: prefersReducedMotion ? 0 : 0.2 }}
             className="relative max-w-sm mx-auto w-full lg:max-w-none"
           >
             <div className="relative w-full aspect-square">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/20 rounded-3xl blur-3xl" />
 
-              <div className="relative bg-card border border-border rounded-3xl p-8 shadow-2xl">
+              <TiltCard className="relative glass-card neon-border rounded-3xl p-8 glow-primary">
                 <div className="space-y-4">
                   <div className="flex justify-center mb-4">
-                    <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-primary/30 bg-muted">
+                    <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-primary/30 bg-muted anim-float-slow anim-glow-pulse">
                       <img
                         src={avatarUrl}
                         alt={resolvedName}
+                        width={112}
+                        height={112}
+                        loading="eager"
+                        fetchPriority="high"
+                        decoding="async"
                         className="w-full h-full object-cover"
                         onError={() => setAvatarUrl(FALLBACK_AVATAR_URL)}
                       />
@@ -202,7 +232,7 @@ export function HeroSection() {
                     <div className="text-primary">{'}'}</div>
                   </div>
                 </div>
-              </div>
+              </TiltCard>
             </div>
           </motion.div>
         </div>
