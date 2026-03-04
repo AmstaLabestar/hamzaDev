@@ -1,4 +1,5 @@
-import { BrainCircuit, Briefcase, House, Languages, Mail, Sparkles } from 'lucide-react';
+import { BrainCircuit, Briefcase, House, Languages, Mail, Shield, Sparkles } from 'lucide-react';
+import { Link } from 'react-router';
 import { Button } from '../ui/button';
 import { ThemeCycleButton } from '../ui/ThemeCycleButton';
 import { MobileBottomNav, type MobileNavItem } from './MobileBottomNav';
@@ -34,10 +35,20 @@ export function MobileLayout() {
       <header className="fixed inset-x-0 top-0 z-[75] border-b border-border/70 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] theme-glass">
         <div className="mx-auto flex max-w-xl items-center justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-primary/80">Mobile</p>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-primary/80"></p>
             <p className="text-base font-semibold">Labestar</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              asChild
+              className="h-10 w-10"
+            >
+              <Link to="/login" aria-label={language === 'fr' ? 'Connexion admin' : 'Admin login'}>
+                <Shield className="h-4 w-4" />
+              </Link>
+            </Button>
             <Button
               variant="outline"
               size="icon"

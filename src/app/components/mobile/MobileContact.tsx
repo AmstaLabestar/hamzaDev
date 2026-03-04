@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Github, Linkedin, Mail, Send } from 'lucide-react';
+import { Github, Linkedin, Mail, Send, Shield } from 'lucide-react';
+import { Link } from 'react-router';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -135,6 +136,21 @@ export function MobileContact() {
           </Button>
         </div>
       </motion.form>
+
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ delay: 0.1 }}
+        className="mt-4 flex justify-center"
+      >
+        <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground hover:text-foreground">
+          <Link to="/login" aria-label={language === 'fr' ? 'Acces administrateur' : 'Admin access'}>
+            <Shield className="mr-1.5 h-3.5 w-3.5" />
+            {language === 'fr' ? 'Espace Admin' : 'Admin Access'}
+          </Link>
+        </Button>
+      </motion.div>
     </section>
   );
 }
