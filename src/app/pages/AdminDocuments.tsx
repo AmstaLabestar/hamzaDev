@@ -27,6 +27,7 @@ import { TableRowSkeleton } from '@/app/components/LoadingSkeleton';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
 import { documentsService } from '@/features/documents/services/documents.service';
 import { useAuth } from '@/app/contexts/AuthContext';
+import { AdminPageHeader, AdminPagination, AdminSurface } from '@/app/components/dashboard';
 
 function formatFileSize(size: number): string {
   if (size < 1024) return `${size} B`;
@@ -76,25 +77,23 @@ export default function AdminDocuments() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Documents</h1>
-          <p className="text-muted-foreground">Upload and manage CV versions in private storage.</p>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Documents"
+        description="Upload and manage CV versions in private storage."
+      />
 
-      <div className="rounded-xl border border-border bg-card p-4">
+      <AdminSurface className="space-y-3">
         <label className="text-sm font-medium">Upload new CV version (PDF only, max 10MB)</label>
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-1 flex flex-col gap-3 lg:flex-row lg:items-center">
           <Input type="file" accept="application/pdf" onChange={handleUpload} disabled={uploading} />
           <div className="inline-flex items-center text-sm text-muted-foreground">
             <FileUp className="h-4 w-4 mr-2" />
             {uploading ? 'Uploading...' : 'Choose a PDF to upload'}
           </div>
         </div>
-      </div>
+      </AdminSurface>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="admin-table-shell">
         {loading ? (
           <Table>
             <TableBody>
@@ -160,31 +159,13 @@ export default function AdminDocuments() {
         )}
       </div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {total} result{total > 1 ? 's' : ''} - Page {query.page} / {totalPages}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={query.page <= 1}
-            onClick={() => setPage(query.page - 1)}
-          >
-            Previous
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={query.page >= totalPages}
-            onClick={() => setPage(query.page + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <AdminPagination
+        total={total}
+        page={query.page}
+        totalPages={totalPages}
+        onPrevious={() => setPage(query.page - 1)}
+        onNext={() => setPage(query.page + 1)}
+      />
 
       <AlertDialog open={Boolean(deleteId)} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>

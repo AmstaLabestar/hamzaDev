@@ -3,6 +3,9 @@ import { motion } from 'motion/react';
 import { FolderKanban, Briefcase, Hammer, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabase-client';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import { AdminPageHeader, AdminStatCard, AdminSurface } from '@/app/components/dashboard';
+import { TechBadge } from '@/app/components/ui/TechBadge';
+import { CORE_TECH_STACK } from '@/app/utils/tech-stack';
 
 interface DashboardStats {
   totalProjects: number;
@@ -111,33 +114,26 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">{isFr ? 'Tableau de bord' : 'Dashboard'}</h1>
-        <p className="text-muted-foreground">
-          {isFr ? 'Bon retour. Voici un apercu de vos donnees admin.' : 'Welcome back! Here is an overview of your admin data.'}
-        </p>
-      </div>
+      <AdminPageHeader
+        title={isFr ? 'Tableau de bord' : 'Dashboard'}
+        description={
+          isFr
+            ? 'Bon retour. Voici un apercu de vos donnees admin.'
+            : 'Welcome back! Here is an overview of your admin data.'
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat, index) => (
-          <motion.div
+          <AdminStatCard
             key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <div className="bg-card border border-border rounded-xl p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
-                <p className="text-2xl font-bold break-words">{loading ? '...' : stat.value}</p>
-              </div>
-            </div>
-          </motion.div>
+            title={stat.title}
+            value={loading ? '...' : stat.value}
+            icon={stat.icon}
+            iconClassName={stat.color}
+            iconContainerClassName={stat.bgColor}
+            delay={index * 0.08}
+          />
         ))}
       </div>
 
@@ -146,46 +142,58 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.4 }}
-          className="bg-card border border-border rounded-xl p-6"
         >
-          <h2 className="text-xl font-bold mb-4">{isFr ? 'Activite recente' : 'Recent Activity'}</h2>
-          {activity.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{isFr ? 'Aucune activite.' : 'No activity yet.'}</p>
-          ) : (
-            <div className="space-y-4">
-              {activity.map((entry) => (
-                <div key={entry.id} className="flex items-center gap-3 text-sm">
-                  <div className="w-2 h-2 rounded-full bg-primary" />
-                  <span className="text-muted-foreground">
-                    {isFr ? `${entry.action} sur ${entry.entity_table}` : `${entry.action} on ${entry.entity_table}`} - {new Date(entry.created_at).toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <AdminSurface className="space-y-4">
+            <h2 className="text-xl font-bold">{isFr ? 'Activite recente' : 'Recent Activity'}</h2>
+            {activity.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{isFr ? 'Aucune activite.' : 'No activity yet.'}</p>
+            ) : (
+              <div className="space-y-4">
+                {activity.map((entry) => (
+                  <div key={entry.id} className="flex items-center gap-3 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-primary" />
+                    <span className="text-muted-foreground">
+                      {isFr ? `${entry.action} sur ${entry.entity_table}` : `${entry.action} on ${entry.entity_table}`} - {new Date(entry.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </AdminSurface>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.5 }}
-          className="bg-card border border-border rounded-xl p-6"
         >
-          <h2 className="text-xl font-bold mb-4">{isFr ? 'Conseils rapides' : 'Quick Tips'}</h2>
-          <ul className="space-y-3 text-sm text-muted-foreground">
-            <li className="flex gap-2">
-              <span className="text-primary">-</span>
-              <span>{isFr ? 'Utilisez le statut brouillon avant publication pour valider le contenu.' : 'Use draft status before each publish to validate content.'}</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-primary">-</span>
-              <span>{isFr ? 'Preferez le bucket prive et les URLs signees pour les apercus.' : 'Prefer private bucket uploads and signed URLs for previews.'}</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-primary">-</span>
-              <span>{isFr ? "Archivez les anciennes donnees en soft delete pour conserver l'historique." : 'Archive old entries with soft delete to keep audit history.'}</span>
-            </li>
-          </ul>
+          <AdminSurface className="space-y-4">
+            <h2 className="text-xl font-bold">{isFr ? 'Conseils rapides' : 'Quick Tips'}</h2>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li className="flex gap-2">
+                <span className="text-primary">-</span>
+                <span>{isFr ? 'Utilisez le statut brouillon avant publication pour valider le contenu.' : 'Use draft status before each publish to validate content.'}</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-primary">-</span>
+                <span>{isFr ? 'Preferez le bucket prive et les URLs signees pour les apercus.' : 'Prefer private bucket uploads and signed URLs for previews.'}</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-primary">-</span>
+                <span>{isFr ? "Archivez les anciennes donnees en soft delete pour conserver l'historique." : 'Archive old entries with soft delete to keep audit history.'}</span>
+              </li>
+            </ul>
+            <div className="space-y-3 pt-2">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                {isFr ? 'Stack principal' : 'Core Stack'}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {CORE_TECH_STACK.map((tech, index) => (
+                  <TechBadge key={tech.id} tech={tech} size="sm" delay={index * 0.03} />
+                ))}
+              </div>
+            </div>
+          </AdminSurface>
         </motion.div>
       </div>
     </div>

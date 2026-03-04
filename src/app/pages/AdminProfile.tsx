@@ -9,6 +9,7 @@ import { useProfile } from '@/features/profile/hooks/useProfile';
 import type { ProfileStatus, ProfileWritePayload } from '@/features/profile/types';
 import { storageService } from '@/services/storage.service';
 import { toast } from 'sonner';
+import { AdminPageHeader, AdminSurface } from '@/app/components/dashboard';
 
 interface ProfileFormState {
   full_name: string;
@@ -115,15 +116,15 @@ export default function AdminProfile() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Profile</h1>
-        <p className="text-muted-foreground">Manage your public professional profile information.</p>
-      </div>
+      <AdminPageHeader
+        title="Profile"
+        description="Manage your public professional profile information."
+      />
 
-      <div className="bg-card border border-border rounded-xl p-6 space-y-6">
+      <AdminSurface className="space-y-6">
         <div className="space-y-2">
           <Label>Avatar (JPG, PNG, WEBP - max 5MB)</Label>
-          <div className="border rounded-lg p-4">
+          <div className="rounded-lg border border-border/70 bg-background/35 p-4">
             <div className="flex items-center gap-4">
               <div className="w-20 h-20 rounded-full overflow-hidden bg-muted flex items-center justify-center">
                 {avatarPreviewUrl ? (
@@ -194,7 +195,7 @@ export default function AdminProfile() {
               onChange={(event) =>
                 setFormData((previous) => ({ ...previous, status: event.target.value as ProfileStatus }))
               }
-              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              className="admin-select"
               disabled={loading}
             >
               <option value="draft">Draft</option>
@@ -227,7 +228,7 @@ export default function AdminProfile() {
         </div>
 
         <div className="pt-2">
-          <Button type="button" onClick={() => void handleSave()} disabled={saving || loading || uploading}>
+          <Button type="button" onClick={() => void handleSave()} disabled={saving || loading || uploading} className="glow-hover">
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -238,8 +239,7 @@ export default function AdminProfile() {
             )}
           </Button>
         </div>
-      </div>
+      </AdminSurface>
     </div>
   );
 }
-

@@ -6,6 +6,15 @@ const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
+const SIGNED_URL_SKEW_SECONDS = 30;
+
+type SignedUrlCacheEntry = {
+  url: string;
+  expiresAt: number;
+};
+
+const signedUrlCache = new Map<string, SignedUrlCacheEntry>();
+const signedUrlInFlight = new Map<string, Promise<string>>();
 
 function sanitizeFileName(fileName: string): string {
   return fileName
@@ -19,6 +28,22 @@ function createPathPrefix(folder: 'projects' | 'documents' | 'avatars', userId: 
   return `${folder}/${userId}`;
 }
 
+function getSignedUrlKey(path: string, expiresInSeconds: number): string {
+  return `${path}|${expiresInSeconds}`;
+}
+
+function getSignedUrlExpiresAt(expiresInSeconds: number): number {
+  const safeLifetime = Math.max(5, expiresInSeconds - SIGNED_URL_SKEW_SECONDS);
+  return Date.now() + safeLifetime * 1000;
+}
+
+function rememberSignedUrl(path: string, expiresInSeconds: number, url: string) {
+  signedUrlCache.set(getSignedUrlKey(path, expiresInSeconds), {
+    url,
+    expiresAt: getSignedUrlExpiresAt(expiresInSeconds),
+  });
+}
+
 async function createSignedUrl(path: string, expiresInSeconds = 3600): Promise<string> {
   const { data, error } = await supabase.storage.from(BUCKET_NAME).createSignedUrl(path, expiresInSeconds);
   if (error || !data?.signedUrl) {
@@ -29,7 +54,29 @@ async function createSignedUrl(path: string, expiresInSeconds = 3600): Promise<s
 
 export const storageService = {
   async getSignedUrl(path: string, expiresInSeconds = 3600): Promise<string> {
-    return createSignedUrl(path, expiresInSeconds);
+    const cacheKey = getSignedUrlKey(path, expiresInSeconds);
+    const cached = signedUrlCache.get(cacheKey);
+
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.url;
+    }
+
+    const inflight = signedUrlInFlight.get(cacheKey);
+    if (inflight) {
+      return inflight;
+    }
+
+    const request = createSignedUrl(path, expiresInSeconds)
+      .then((url) => {
+        rememberSignedUrl(path, expiresInSeconds, url);
+        return url;
+      })
+      .finally(() => {
+        signedUrlInFlight.delete(cacheKey);
+      });
+
+    signedUrlInFlight.set(cacheKey, request);
+    return request;
   },
 
   async uploadProjectImage(file: File, userId: string): Promise<{ path: string; previewUrl: string }> {
@@ -55,6 +102,7 @@ export const storageService = {
     }
 
     const previewUrl = await createSignedUrl(path, 3600);
+    rememberSignedUrl(path, 3600, previewUrl);
     return { path, previewUrl };
   },
 
@@ -81,6 +129,7 @@ export const storageService = {
     }
 
     const previewUrl = await createSignedUrl(path, 3600);
+    rememberSignedUrl(path, 3600, previewUrl);
     return { path, previewUrl };
   },
 
@@ -107,6 +156,7 @@ export const storageService = {
     }
 
     const previewUrl = await createSignedUrl(path, 3600);
+    rememberSignedUrl(path, 3600, previewUrl);
     return { path, previewUrl };
   },
 

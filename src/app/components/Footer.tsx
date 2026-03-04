@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { Github, Linkedin, Mail } from 'lucide-react';
 import { publicContentService } from '@/features/public/services/public-content.service';
 import { useLanguage } from '@/app/contexts/LanguageContext';
@@ -63,6 +64,14 @@ export function Footer() {
           <p className="text-sm text-muted-foreground">
             &copy; {currentYear} DevPortfolio. {text.footer.rightsReserved}
           </p>
+
+          <Link
+            to="/login"
+            className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground/55 transition-colors hover:text-foreground"
+            aria-label="Admin login"
+          >
+            Admin
+          </Link>
         </div>
       </div>
     </footer>

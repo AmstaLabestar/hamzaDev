@@ -28,6 +28,7 @@ import { TableRowSkeleton } from '../components/LoadingSkeleton';
 import { useProjects } from '@/features/projects/hooks/useProjects';
 import type { ProjectType } from '@/features/projects/types';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import { AdminPageHeader, AdminPagination } from '@/app/components/dashboard';
 
 export default function AdminProjects() {
   const { language } = useLanguage();
@@ -66,19 +67,16 @@ export default function AdminProjects() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">{isFr ? 'Projets' : 'Projects'}</h1>
-          <p className="text-muted-foreground">
-            {isFr ? 'Gerez les projets du portfolio' : 'Manage your portfolio projects'}
-          </p>
-        </div>
-        <Button onClick={() => navigate('/admin/projects/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          {isFr ? 'Nouveau projet' : 'New Project'}
-        </Button>
-      </div>
+      <AdminPageHeader
+        title={isFr ? 'Projets' : 'Projects'}
+        description={isFr ? 'Gerez les projets du portfolio' : 'Manage your portfolio projects'}
+        action={
+          <Button onClick={() => navigate('/admin/projects/new')} className="glow-hover">
+            <Plus className="h-4 w-4 mr-2" />
+            {isFr ? 'Nouveau projet' : 'New Project'}
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-[1fr_220px_220px]">
         <Input
@@ -89,7 +87,7 @@ export default function AdminProjects() {
         <select
           value={query.status ?? 'all'}
           onChange={(event) => setStatus(event.target.value as 'all' | 'draft' | 'published')}
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          className="admin-select"
         >
           <option value="all">{isFr ? 'Tous les statuts' : 'All statuses'}</option>
           <option value="published">{isFr ? 'Publie' : 'Published'}</option>
@@ -98,7 +96,7 @@ export default function AdminProjects() {
         <select
           value={query.projectType ?? 'all'}
           onChange={(event) => setProjectType(event.target.value as ProjectType | 'all')}
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          className="admin-select"
         >
           <option value="all">{isFr ? 'Tous les types' : 'All types'}</option>
           <option value="web">Web</option>
@@ -114,7 +112,7 @@ export default function AdminProjects() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="bg-card border border-border rounded-xl overflow-hidden"
+        className="admin-table-shell"
       >
         {loading ? (
           <Table>
@@ -216,6 +214,7 @@ export default function AdminProjects() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="glow-hover"
                         onClick={() => navigate(`/admin/projects/${project.id}`)}
                       >
                         <Edit className="h-4 w-4" />
@@ -223,6 +222,7 @@ export default function AdminProjects() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="glow-hover"
                         onClick={() => setDeleteId(project.id)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -236,31 +236,16 @@ export default function AdminProjects() {
         )}
       </motion.div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {total} {isFr ? `resultat${total > 1 ? 's' : ''}` : `result${total > 1 ? 's' : ''}`} - {isFr ? 'Page' : 'Page'} {query.page} / {totalPages}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={query.page <= 1}
-            onClick={() => setPage(query.page - 1)}
-          >
-            {isFr ? 'Precedent' : 'Previous'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={query.page >= totalPages}
-            onClick={() => setPage(query.page + 1)}
-          >
-            {isFr ? 'Suivant' : 'Next'}
-          </Button>
-        </div>
-      </div>
+      <AdminPagination
+        total={total}
+        page={query.page}
+        totalPages={totalPages}
+        summaryText={`${total} ${isFr ? `resultat${total > 1 ? 's' : ''}` : `result${total > 1 ? 's' : ''}`} - ${isFr ? 'Page' : 'Page'} ${query.page} / ${totalPages}`}
+        previousLabel={isFr ? 'Precedent' : 'Previous'}
+        nextLabel={isFr ? 'Suivant' : 'Next'}
+        onPrevious={() => setPage(query.page - 1)}
+        onNext={() => setPage(query.page + 1)}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

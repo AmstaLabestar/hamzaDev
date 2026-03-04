@@ -1,6 +1,7 @@
 import { Outlet, useNavigate, Link, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { 
   LayoutDashboard, 
   FolderKanban, 
@@ -16,12 +17,15 @@ import {
   Languages
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { ThemeCycleButton } from '../components/ui/ThemeCycleButton';
 import { cn } from '../components/ui/utils';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import { usePrefersReducedMotion } from '@/app/hooks';
 
 export default function AdminLayout() {
   const { user, loading, signout, isAuthenticated, isAdmin } = useAuth();
   const { language, toggleLanguage } = useLanguage();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -68,9 +72,9 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background theme-page admin-page-bg">
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-50 flex items-center justify-between px-4">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-card/80 border-b border-border/70 backdrop-blur-xl z-50 flex items-center justify-between px-4 theme-glass">
         <h1 className="text-lg font-bold">{isFr ? 'Panneau Admin' : 'Admin Panel'}</h1>
         <div className="flex items-center gap-2">
           <Button
@@ -86,6 +90,11 @@ export default function AdminLayout() {
           <Button variant="ghost" size="icon" onClick={toggleLanguage} aria-label={isFr ? 'Passer en anglais' : 'Switch to French'}>
             <Languages className="h-4 w-4" />
           </Button>
+          <ThemeCycleButton
+            variant="ghost"
+            size="icon"
+            className="glow-hover"
+          />
           <Button
             variant="ghost"
             size="icon"
@@ -99,7 +108,7 @@ export default function AdminLayout() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 h-full w-64 bg-sidebar border-r border-sidebar-border z-40 transition-transform duration-300",
+          "fixed top-0 left-0 h-full w-64 bg-sidebar/90 border-r border-sidebar-border z-40 transition-transform duration-300 backdrop-blur-xl theme-glass shadow-[0_24px_56px_-36px_var(--glow-strong)]",
           "lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
@@ -128,22 +137,31 @@ export default function AdminLayout() {
               <Languages className="h-4 w-4 mr-2" />
               {isFr ? 'Langue: FR' : 'Language: EN'}
             </Button>
+            <ThemeCycleButton
+              variant="outline"
+              size="sm"
+              className="w-full justify-start glow-hover"
+              labelPrefix={isFr ? 'Theme' : 'Theme'}
+              showLabel
+            />
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {menuItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = item.path === '/admin'
+                ? location.pathname === '/admin'
+                : location.pathname.startsWith(item.path);
               return (
                 <Link
                   key={item.path}
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
                     isActive
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_16px_34px_-24px_var(--glow-strong)]"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-[2px]"
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -193,7 +211,17 @@ export default function AdminLayout() {
       {/* Main Content */}
       <main className="lg:ml-64 pt-16 lg:pt-0">
         <div className="p-6 lg:p-8">
-          <Outlet />
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 18, filter: prefersReducedMotion ? 'none' : 'blur(2px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -10, filter: prefersReducedMotion ? 'none' : 'blur(2px)' }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.22 }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>
